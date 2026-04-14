@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gyan Yantra</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+/* ── Themes ──────────────────────────────────────────────────────────────── */
+[data-theme="dark"] {
+    --bg:      #0a0a0b;
+    --surface: #111114;
+    --surf2:   #1a1a1f;
+    --border:  #2a2a32;
+    --accent:  #c8a96e;
+    --text:    #e8e6e0;
+    --muted:   #6a6860;
+    --green:   #2ecc71;
+    --red:     #e74c3c;
+    --blue:    #3498db;
+    --shadow:  rgba(0,0,0,0.4);
+}
+[data-theme="light"] {
+    --bg:      #f5f4f0;
+    --surface: #ffffff;
+    --surf2:   #ededea;
+    --border:  #d4d2cc;
+    --accent:  #a07840;
+    --text:    #1a1814;
+    --muted:   #8a8680;
+    --green:   #1a8a45;
+    --red:     #c0392b;
+    --blue:    #2471a3;
+    --shadow:  rgba(0,0,0,0.12);
+}
+
+/* ── Reset ───────────────────────────────────────────────────────────────── */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', system-ui, sans-serif;
+    overflow: hidden;
+    transition: background .25s, color .25s;
+}
+
+/* ── Layout ──────────────────────────────────────────────────────────────── */
+.shell {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+/* ── Header ──────────────────────────────────────────────────────────────── */
+header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 28px;
+    height: 58px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    box-shadow: 0 1px 8px var(--shadow);
+    position: relative;
+    z-index: 10;
+}
+
+.logo {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+}
+.logo-name {
+    font-family: 'DM Serif Display', Georgia, serif;
+    font-size: 22px;
+    color: var(--accent);
+    letter-spacing: .02em;
+}
+.logo-sub {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: .14em;
+    text-transform: uppercase;
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+/* Status */
+.status-row {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+}
+.dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--green);
+    transition: background .3s;
+    flex-shrink: 0;
+}
+.dot.listening { background: var(--red);    animation: pulse .8s infinite; }
+.dot.thinking  { background: var(--accent); animation: pulse 1.4s infinite; }
+.dot.speaking  { background: var(--blue);   animation: pulse 1s infinite; }
+@keyframes pulse {
+    0%,100% { opacity:1; transform:scale(1); }
+    50%      { opacity:.35; transform:scale(.7); }
+}
+
+/* Theme toggle */
+.theme-btn {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--surf2);
+    color: var(--text);
+    cursor: pointer;
+    font-size: 17px;
+    display: flex; align-items: center; justify-content: center;
+    transition: background .2s, border-color .2s, transform .15s;
+    flex-shrink: 0;
+}
+.theme-btn:hover {
+    background: var(--border);
+    border-color: var(--accent);
+    transform: rotate(20deg);
+}
+
+/* Timing badge */
+.timing-badge {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    background: var(--surf2);
+    border: 1px solid var(--border);
+    padding: 3px 8px;
+    border-radius: 10px;
+    display: none;
+    white-space: nowrap;
+}
+.timing-badge.show { display: inline-block; }
+
+/* ── Transcript ───────────────────────────────────────────────────────────── */
+.transcript {
+    flex: 1;
+    overflow-y: auto;
+    padding: 36px 10%;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    scroll-behavior: smooth;
+}
+.transcript::-webkit-scrollbar { width: 4px; }
+.transcript::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+.turn {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    animation: fadeUp .28s ease-out forwards;
+    opacity: 0;
+}
+@keyframes fadeUp {
+    from { opacity:0; transform:translateY(8px); }
+    to   { opacity:1; transform:translateY(0); }
+}
+
+.turn-user      { align-self: flex-end;  max-width: 68%; }
+.turn-assistant { align-self: flex-start; max-width: 80%; }
+
+.turn-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 0 3px;
+}
+.turn-user .turn-label { text-align: right; }
+
+.bubble-user {
+    background: var(--accent);
+    color: #1a1408;
+    padding: 12px 18px;
+    font-size: 15px;
+    line-height: 1.6;
+    font-weight: 500;
+    border-radius: 2px;
+}
+[data-theme="light"] .bubble-user { color: #fff; }
+
+.bubble-assistant {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    padding: 14px 20px;
+    font-size: 15px;
+    line-height: 1.75;
+    color: var(--text);
+    border-radius: 2px;
+    min-height: 20px;
+    transition: background .25s, border-color .25s;
+}
+.bubble-assistant.streaming::after {
+    content: '▋';
+    color: var(--accent);
+    animation: blink .65s infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+.thinking-dots {
+    display: flex; gap: 5px; align-items: center; padding: 2px 0;
+}
+.thinking-dots span {
+    width: 6px; height: 6px;
+    background: var(--accent);
+    border-radius: 50%;
+    animation: bounce 1.2s infinite ease-in-out both;
+}
+.thinking-dots span:nth-child(1) { animation-delay: -.3s; }
+.thinking-dots span:nth-child(2) { animation-delay: -.15s; }
+@keyframes bounce {
+    0%,80%,100% { transform:scale(.4); opacity:.4; }
+    40%          { transform:scale(1);  opacity:1; }
+}
+
+/* Empty state */
+.empty-state {
+    flex: 1;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 12px;
+    pointer-events: none; user-select: none;
+}
+.empty-glyph {
+    font-family: 'DM Serif Display', serif;
+    font-size: 62px;
+    color: var(--border);
+    line-height: 1;
+}
+.empty-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 20px;
+    color: var(--muted);
+}
+.empty-hint {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--border);
+    letter-spacing: .08em;
+}
+
+/* ── Mic Bar ──────────────────────────────────────────────────────────────── */
+.mic-bar {
+    flex-shrink: 0;
+    padding: 18px 28px 22px;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 -1px 8px var(--shadow);
+    transition: background .25s;
+}
+
+.mic-ring-wrap {
+    position: relative;
+    width: 76px; height: 76px;
+    display: flex; align-items: center; justify-content: center;
+}
+.mic-ring {
+    position: absolute;
+    width: 76px; height: 76px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    pointer-events: none;
+    transition: border-color .2s;
+}
+.mic-ring.active {
+    border-color: var(--red);
+    animation: ring-pulse .75s infinite;
+}
+@keyframes ring-pulse {
+    0%,100% { transform:scale(1);    opacity:1; }
+    50%      { transform:scale(1.14); opacity:.45; }
+}
+
+.mic-btn {
+    width: 60px; height: 60px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    background: var(--surf2);
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    position: relative; z-index: 1;
+    transition: background .15s, border-color .15s, transform .1s;
+    -webkit-user-select: none; user-select: none;
+    outline: none;
+}
+.mic-btn:hover        { background: var(--border); border-color: var(--accent); }
+.mic-btn:focus-visible{ outline: 2px solid var(--accent); outline-offset: 3px; }
+.mic-btn.active       { background: var(--red); border-color: var(--red); transform: scale(1.06); }
+.mic-icon { font-size: 24px; line-height: 1; pointer-events: none; }
+
+/* Waveform */
+.waveform {
+    display: flex; align-items: center; gap: 3px;
+    height: 26px;
+    opacity: 0;
+    transition: opacity .2s;
+}
+.waveform.active { opacity: 1; }
+.wave-bar {
+    width: 3px;
+    border-radius: 2px;
+    background: var(--red);
+    height: 4px;
+    transition: height .05s;
+}
+
+.mic-hint {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: .08em;
+    text-align: center;
+}
+.mic-hint kbd {
+    display: inline-block;
+    background: var(--surf2);
+    border: 1px solid var(--border);
+    padding: 1px 6px;
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    border-radius: 2px;
+    color: var(--text);
+}
+
+/* ── Toast ────────────────────────────────────────────────────────────────── */
+.toast {
+    position: fixed; bottom: 18px; right: 18px;
+    background: var(--surf2);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    padding: 10px 15px;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--text);
+    z-index: 999;
+    max-width: 300px;
+    opacity: 0;
+    transform: translateY(6px);
+    transition: opacity .22s, transform .22s;
+    pointer-events: none;
+    border-radius: 2px;
+}
+.toast.show  { opacity: 1; transform: translateY(0); }
+.toast.error { border-left-color: var(--red); }
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- Header -->
+  <header>
+    <div class="logo">
+      <span class="logo-name">Gyan Yantra</span>
+      <span class="logo-sub">Voice</span>
+    </div>
+    <div class="header-right">
+      <span class="timing-badge" id="timing-badge"></span>
+      <div class="status-row">
+        <div class="dot" id="dot"></div>
+        <span id="status-text">Ready</span>
+      </div>
+      <button class="theme-btn" id="theme-btn" title="Toggle light / dark mode">🌙</button>
+    </div>
+  </header>
+
+  <!-- Transcript -->
+  <div class="transcript" id="transcript">
+    <div class="empty-state" id="empty-state">
+      <div class="empty-glyph">ज्ञ</div>
+      <div class="empty-title">Hold Space to Speak</div>
+      <div class="empty-hint">or hold the button below</div>
+    </div>
+  </div>
+
+  <!-- Mic Bar -->
+  <div class="mic-bar">
+    <div class="mic-ring-wrap">
+      <div class="mic-ring" id="mic-ring"></div>
+      <button class="mic-btn" id="mic-btn" title="Hold to speak">
+        <span class="mic-icon" id="mic-icon">🎙</span>
+      </button>
+    </div>
+    <div class="waveform" id="waveform"></div>
+    <div class="mic-hint">Hold <kbd>Space</kbd> to speak &nbsp;·&nbsp; Release to send</div>
+  </div>
+
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+'use strict';
+
+/* ── Theme ─────────────────────────────────────────────────────────────────── */
+var html      = document.documentElement;
+var themeBtn  = document.getElementById('theme-btn');
+var savedTheme = localStorage.getItem('gy_theme') || 'dark';
+html.setAttribute('data-theme', savedTheme);
+themeBtn.textContent = savedTheme === 'dark' ? '☀️' : '🌙';
+
+themeBtn.addEventListener('click', function() {
+    var cur  = html.getAttribute('data-theme');
+    var next = cur === 'dark' ? 'light' : 'dark';
+    html.setAttribute('data-theme', next);
+    localStorage.setItem('gy_theme', next);
+    themeBtn.textContent = next === 'dark' ? '☀️' : '🌙';
+});
+
+/* ── WebSocket ─────────────────────────────────────────────────────────────── */
+var ws     = null;
+var wsOpen = false;
+
+function connectWS() {
+    var proto = location.protocol === 'https:' ? 'wss' : 'ws';
+    ws = new WebSocket(proto + '://' + location.host + '/ws');
+    ws.onopen    = function() { wsOpen = true;  setStatus('ready', 'Ready'); };
+    ws.onclose   = function() { wsOpen = false; setStatus('error', 'Reconnecting…'); setTimeout(connectWS, 2000); };
+    ws.onerror   = function() { wsOpen = false; };
+    ws.onmessage = function(ev) {
+        try { onMessage(JSON.parse(ev.data)); } catch(e) { console.error('WS parse error', e); }
+    };
+}
+
+function wsSend(obj) {
+    if (ws && wsOpen) {
+        try { ws.send(JSON.stringify(obj)); } catch(e) {}
+    }
+}
+
+connectWS();
+
+/* ── Status ────────────────────────────────────────────────────────────────── */
+function setStatus(state, text) {
+    document.getElementById('status-text').textContent = text;
+    var d = document.getElementById('dot');
+    d.className = 'dot';
+    if (state === 'listening' || state === 'thinking' || state === 'speaking') {
+        d.classList.add(state);
+    }
+}
+
+/* ── Toast ─────────────────────────────────────────────────────────────────── */
+var toastEl    = document.getElementById('toast');
+var toastTimer = null;
+function toast(msg, isErr) {
+    toastEl.textContent = msg;
+    toastEl.className   = 'toast show' + (isErr ? ' error' : '');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function() { toastEl.classList.remove('show'); }, 3500);
+}
+
+/* ── Timing Badge ──────────────────────────────────────────────────────────── */
+var timingBadge = document.getElementById('timing-badge');
+function showTiming(llm_ms, tts_sec, tokens) {
+    timingBadge.textContent = tokens + ' tokens · LLM ' + llm_ms + 'ms · TTS ' + tts_sec + 's';
+    timingBadge.classList.add('show');
+}
+
+/* ── Waveform ──────────────────────────────────────────────────────────────── */
+var waveformEl = document.getElementById('waveform');
+var waveBars   = [];
+for (var _i = 0; _i < 22; _i++) {
+    var _b = document.createElement('div');
+    _b.className = 'wave-bar';
+    waveformEl.appendChild(_b);
+    waveBars.push(_b);
+}
+
+var waveFrame = null;
+var waveCtx   = null;
+
+function startWaveform(stream) {
+    waveCtx = new AudioContext();
+    var analyser = waveCtx.createAnalyser();
+    analyser.fftSize = 64;
+    waveCtx.createMediaStreamSource(stream).connect(analyser);
+    var data = new Uint8Array(analyser.frequencyBinCount);
+    function draw() {
+        analyser.getByteFrequencyData(data);
+        for (var i = 0; i < waveBars.length; i++) {
+            var v = data[Math.floor(i * data.length / waveBars.length)] / 255;
+            waveBars[i].style.height  = (4 + v * 22) + 'px';
+            waveBars[i].style.opacity = String(0.4 + v * 0.6);
+        }
+        waveFrame = requestAnimationFrame(draw);
+    }
+    draw();
+    waveformEl.classList.add('active');
+}
+
+function stopWaveform() {
+    if (waveFrame) { cancelAnimationFrame(waveFrame); waveFrame = null; }
+    if (waveCtx)   { try { waveCtx.close(); } catch(e) {} waveCtx = null; }
+    for (var i = 0; i < waveBars.length; i++) {
+        waveBars[i].style.height  = '4px';
+        waveBars[i].style.opacity = '1';
+    }
+    waveformEl.classList.remove('active');
+}
+
+/* ── Recording ─────────────────────────────────────────────────────────────── */
+var recorder    = null;
+var recStream   = null;
+var recChunks   = [];
+var isRecording = false;
+var isSpeaking  = false;
+
+function setMicUI(active) {
+    document.getElementById('mic-btn').classList.toggle('active', active);
+    document.getElementById('mic-ring').classList.toggle('active', active);
+    document.getElementById('mic-icon').textContent = active ? '🔴' : '🎙';
+}
+
+function startRecording() {
+    if (isRecording) return;
+    if (isSpeaking) stopPlayback();
+
+    navigator.mediaDevices.getUserMedia({ audio: true })
+        .then(function(stream) {
+            recStream   = stream;
+            recChunks   = [];
+            isRecording = true;
+
+            var mimeTypes = [
+                'audio/webm;codecs=opus',
+                'audio/webm',
+                'audio/ogg;codecs=opus',
+                'audio/ogg'
+            ];
+            var mime = '';
+            for (var i = 0; i < mimeTypes.length; i++) {
+                if (MediaRecorder.isTypeSupported(mimeTypes[i])) {
+                    mime = mimeTypes[i];
+                    break;
+                }
+            }
+
+            try {
+                recorder = mime
+                    ? new MediaRecorder(stream, { mimeType: mime })
+                    : new MediaRecorder(stream);
+            } catch(e) {
+                recorder = new MediaRecorder(stream);
+            }
+
+            recorder.ondataavailable = function(e) {
+                if (e.data && e.data.size > 0) recChunks.push(e.data);
+            };
+
+            recorder.onstop = function() {
+                if (recChunks.length === 0) { setStatus('ready', 'Ready'); return; }
+                var blobMime = recorder.mimeType || 'audio/webm';
+                var blob     = new Blob(recChunks, { type: blobMime });
+                recChunks    = [];
+                var reader   = new FileReader();
+                reader.onloadend = function() {
+                    var b64 = reader.result.split(',')[1];
+                    wsSend({ type: 'audio', data: b64, mime: blobMime });
+                };
+                reader.readAsDataURL(blob);
+            };
+
+            recorder.start(100);
+            startWaveform(stream);
+            setMicUI(true);
+            setStatus('listening', 'Listening…');
+            wsSend({ type: 'interrupt' });
+        })
+        .catch(function(err) {
+            console.error('Mic error:', err);
+            isRecording = false;
+            toast('Mic error: ' + err.message, true);
+        });
+}
+
+function stopRecording() {
+    if (!isRecording) return;
+    isRecording = false;
+
+    if (recorder && recorder.state !== 'inactive') {
+        recorder.stop();
+    }
+    if (recStream) {
+        recStream.getTracks().forEach(function(t) { t.stop(); });
+        recStream = null;
+    }
+
+    stopWaveform();
+    setMicUI(false);
+    setStatus('thinking', 'Processing…');
+}
+
+/* ── Playback ──────────────────────────────────────────────────────────────── */
+var audioQueue   = [];
+var playingAudio = null;
+
+function stopPlayback() {
+    if (playingAudio) {
+        playingAudio.pause();
+        playingAudio.src = '';
+        playingAudio = null;
+    }
+    audioQueue = [];
+    isSpeaking = false;
+}
+
+function playNext() {
+    if (audioQueue.length === 0) {
+        isSpeaking = false;
+        if (!isRecording) setStatus('ready', 'Ready');
+        return;
+    }
+    isSpeaking = true;
+    setStatus('speaking', 'Speaking…');
+    var b64     = audioQueue.shift();
+    var byteStr = atob(b64);
+    var bytes   = new Uint8Array(byteStr.length);
+    for (var i = 0; i < byteStr.length; i++) bytes[i] = byteStr.charCodeAt(i);
+    var blob  = new Blob([bytes], { type: 'audio/wav' });
+    var url   = URL.createObjectURL(blob);
+    var audio = new Audio(url);
+    playingAudio = audio;
+    audio.onended = function() { URL.revokeObjectURL(url); playingAudio = null; playNext(); };
+    audio.onerror = function() { URL.revokeObjectURL(url); playingAudio = null; playNext(); };
+    audio.play().catch(function() { playNext(); });
+}
+
+/* ── Transcript ────────────────────────────────────────────────────────────── */
+var transcriptEl   = document.getElementById('transcript');
+var emptyStateEl   = document.getElementById('empty-state');
+var activeBubble   = null;
+var activeBubbleTxt = '';
+var hasMessages    = false;
+
+function hideEmpty() {
+    if (!hasMessages) {
+        emptyStateEl.style.display = 'none';
+        hasMessages = true;
+    }
+}
+
+function addUserTurn(text) {
+    hideEmpty();
+    var turn = document.createElement('div');
+    turn.className = 'turn turn-user';
+    turn.innerHTML = '<div class="turn-label">You</div>'
+                   + '<div class="bubble-user">' + esc(text) + '</div>';
+    transcriptEl.appendChild(turn);
+    scrollBottom();
+}
+
+function startAssistantTurn() {
+    hideEmpty();
+    activeBubbleTxt = '';
+    var turn = document.createElement('div');
+    turn.className = 'turn turn-assistant';
+    turn.innerHTML = '<div class="turn-label">Gyan Yantra</div>'
+                   + '<div class="bubble-assistant streaming" id="active-bubble">'
+                   + '<div class="thinking-dots"><span></span><span></span><span></span></div>'
+                   + '</div>';
+    transcriptEl.appendChild(turn);
+    activeBubble = document.getElementById('active-bubble');
+    scrollBottom();
+}
+
+function appendToken(token) {
+    if (!activeBubble) return;
+    activeBubbleTxt += token;
+    activeBubble.textContent = activeBubbleTxt;
+    activeBubble.classList.add('streaming');
+    scrollBottom();
+}
+
+function finaliseAssistant() {
+    if (activeBubble) {
+        activeBubble.classList.remove('streaming');
+        activeBubble.removeAttribute('id');
+        activeBubble    = null;
+        activeBubbleTxt = '';
+    }
+}
+
+function scrollBottom() { transcriptEl.scrollTop = transcriptEl.scrollHeight; }
+function esc(s) {
+    return String(s)
+        .replace(/&/g,'&amp;')
+        .replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;');
+}
+
+/* ── Server Messages ───────────────────────────────────────────────────────── */
+function onMessage(msg) {
+    switch (msg.type) {
+
+        case 'transcribing':
+            setStatus('thinking', 'Transcribing…');
+            break;
+
+        case 'transcription':
+            addUserTurn(msg.text);
+            startAssistantTurn();
+            setStatus('thinking', 'Thinking…');
+            break;
+
+        case 'thinking':
+            setStatus('thinking', 'Thinking…');
+            break;
+
+        case 'text_chunk':
+            appendToken(msg.content || '');
+            break;
+
+        case 'audio_chunk':
+            if (msg.timing) {
+                showTiming(msg.timing.llm_ms, msg.timing.tts_sec, msg.timing.tokens);
+            }
+            audioQueue.push(msg.data);
+            if (!playingAudio) playNext();
+            break;
+
+        case 'done':
+            finaliseAssistant();
+            if (!isSpeaking && !isRecording) setStatus('ready', 'Ready');
+            break;
+
+        case 'interrupted':
+            finaliseAssistant();
+            stopPlayback();
+            break;
+
+        case 'error':
+            finaliseAssistant();
+            toast(msg.message || 'Error.', true);
+            setStatus('ready', 'Ready');
+            break;
+    }
+}
+
+/* ── Spacebar ──────────────────────────────────────────────────────────────── */
+var spaceDown = false;
+
+document.addEventListener('keydown', function(e) {
+    if (e.code !== 'Space' || e.repeat) return;
+    var tag = document.activeElement ? document.activeElement.tagName : '';
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'BUTTON') return;
+    e.preventDefault();
+    if (!spaceDown) { spaceDown = true; startRecording(); }
+});
+
+document.addEventListener('keyup', function(e) {
+    if (e.code !== 'Space') return;
+    e.preventDefault();
+    if (spaceDown) { spaceDown = false; stopRecording(); }
+});
+
+/* ── Mic Button ────────────────────────────────────────────────────────────── */
+var micBtn = document.getElementById('mic-btn');
+
+micBtn.addEventListener('mousedown', function(e) {
+    e.preventDefault();
+    startRecording();
+});
+
+document.addEventListener('mouseup', function() {
+    if (isRecording) stopRecording();
+});
+
+micBtn.addEventListener('touchstart', function(e) {
+    e.preventDefault();
+    startRecording();
+}, { passive: false });
+
+document.addEventListener('touchend', function() {
+    if (isRecording) stopRecording();
+}, { passive: false });
+
+/* ── Keepalive ─────────────────────────────────────────────────────────────── */
+setInterval(function() { wsSend({ type: 'ping' }); }, 25000);
+</script>
+</body>
+</html>
